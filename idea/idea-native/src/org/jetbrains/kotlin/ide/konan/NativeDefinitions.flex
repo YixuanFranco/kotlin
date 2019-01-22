@@ -18,6 +18,9 @@ import org.jetbrains.kotlin.ide.konan.psi.impl.NativeDefinitionsTypes;
 WHITE_SPACE=[\ \v\n\t\f]
 CHAR=[^\r\n-]
 
+NON_DELIM=({CHAR}+(--?)?)+
+PART=NON_DELIM
+
 %state AFTER_TOKEN
 
 %%

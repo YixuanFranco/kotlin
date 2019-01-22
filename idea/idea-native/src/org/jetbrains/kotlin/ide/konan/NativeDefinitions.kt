@@ -6,11 +6,9 @@
 package org.jetbrains.kotlin.ide.konan
 
 import com.intellij.lang.*
-import com.intellij.lang.injection.MultiHostInjector
-import com.intellij.lang.injection.MultiHostRegistrar
 import com.intellij.lexer.FlexAdapter
 import com.intellij.lexer.Lexer
-import com.intellij.openapi.options.colors.*
+import com.intellij.lexer.LexerBase
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.fileTypes.*
@@ -26,6 +24,7 @@ import org.jetbrains.kotlin.konan.library.KDEFINITIONS_FILE_EXTENSION
 import org.jetbrains.kotlin.ide.konan.psi.NativeDefinitionsFile
 import org.jetbrains.kotlin.ide.konan.psi.impl.NativeDefinitionsFirstHalfImpl
 import org.jetbrains.kotlin.ide.konan.psi.impl.NativeDefinitionsTypes
+import org.jetbrains.kotlin.ide.konan.psi.impl.NativeDefinitionsTypes.FIRST_HALF
 import java.lang.StringBuilder
 
 
@@ -53,6 +52,50 @@ class NativeDefinitionsLanguage private constructor() : Language(NATIVE_DEFINITI
     }
 }
 
+class NativeDefinitionsLexer2 : LexerBase() {
+    private var myText: CharSequence? = null
+    private var myBegin: Int = 0
+
+    override fun getState(): Int = 0
+
+    override fun getTokenStart(): Int = myBegin
+
+    override fun getBufferEnd(): Int = myText?.length ?: 0
+
+    override fun getBufferSequence(): CharSequence = myText ?: throw RuntimeException("Buffer is requested without initialization.")
+
+    override fun start(buffer: CharSequence, startOffset: Int, endOffset: Int, initialState: Int) {
+        myText = buffer
+    }
+
+    override fun getTokenType(): IElementType? {
+        return if (myBegin != bufferEnd) NativeDefinitionsTypes.HOST_TOKEN else null
+    }
+
+    override fun advance() {
+        myBegin = bufferEnd
+    }
+
+    override fun getTokenEnd(): Int = myText?.length ?: 0
+}
+
+class NativeDefinitionsParser2 : PsiParser, LightPsiParser {
+    override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
+        parseLight(root, builder)
+        return builder.treeBuilt
+    }
+
+    override fun parseLight(root: IElementType, builder: PsiBuilder) {
+        val rootNode = builder.mark()
+        val m1 = builder.mark()
+        val tt = builder.tokenText
+        println("> tt is $tt")
+        builder.advanceLexer()
+        m1.done(FIRST_HALF)
+        rootNode.done(root)
+    }
+}
+
 class NativeDefinitionsLexerAdapter : FlexAdapter(NativeDefinitionsLexer(null as Reader?))
 
 class NativeDefinitionsParserDefinition : ParserDefinition {
@@ -63,12 +106,10 @@ class NativeDefinitionsParserDefinition : ParserDefinition {
     override fun getStringLiteralElements(): TokenSet = TokenSet.EMPTY
     override fun getFileNodeType(): IFileElementType = FILE
 
-    override fun createLexer(project: Project): Lexer = NativeDefinitionsLexerAdapter()
-    override fun createParser(project: Project): PsiParser = NativeDefinitionsParser()
-    override fun createFile(viewProvider: FileViewProvider): PsiFile = NativeDefinitionsFile(viewProvider)
-    override fun spaceExistanceTypeBetweenTokens(left: ASTNode, right: ASTNode): ParserDefinition.SpaceRequirements =
-        ParserDefinition.SpaceRequirements.MAY
+    override fun createLexer(project: Project): Lexer = NativeDefinitionsLexer2()
+    override fun createParser(project: Project): PsiParser = NativeDefinitionsParser2()
 
+    override fun createFile(viewProvider: FileViewProvider): PsiFile = NativeDefinitionsFile(viewProvider)
     override fun createElement(node: ASTNode): PsiElement = NativeDefinitionsTypes.Factory.createElement(node)
 }
 
@@ -76,21 +117,21 @@ class NativeDefinitionsSyntaxHighlighter : SyntaxHighlighterBase() {
 
     override fun getTokenHighlights(tokenType: IElementType?): Array<TextAttributesKey> =
         when (tokenType) {
-            NativeDefinitionsTypes.FIRST_HALF -> INJECTION_KEYS
-            NativeDefinitionsTypes.SECOND_HALF -> INJECTION_KEYS
-            NativeDefinitionsTypes.DELIM -> DELIM_KEYS
+            NativeDefinitionsTypes.FIRST_HALF -> HOST_KEYS
+            NativeDefinitionsTypes.SECOND_HALF -> HOST_KEYS
+            NativeDefinitionsTypes.DELIM_TOKEN -> DELIM_KEYS
             else -> EMPTY_KEYS
         }
 
-    override fun getHighlightingLexer(): Lexer = NativeDefinitionsLexerAdapter()
+    override fun getHighlightingLexer(): Lexer = NativeDefinitionsLexer2()
 
     companion object {
         private fun createKeys(externalName: String, key: TextAttributesKey): Array<TextAttributesKey> {
             return arrayOf(TextAttributesKey.createTextAttributesKey(externalName, key))
         }
 
-        val DELIM_KEYS = createKeys("Comment", DefaultLanguageHighlighterColors.LINE_COMMENT)
-        val INJECTION_KEYS = createKeys("String literal", DefaultLanguageHighlighterColors.STRING)
+        val DELIM_KEYS = createKeys("Delimiter", DefaultLanguageHighlighterColors.LINE_COMMENT)
+        val HOST_KEYS = createKeys("Language host", DefaultLanguageHighlighterColors.STRING)
         val EMPTY_KEYS = emptyArray<TextAttributesKey>()
     }
 }
@@ -100,7 +141,7 @@ class NativeDefinitionsSyntaxHighlighterFactory : SyntaxHighlighterFactory() {
         NativeDefinitionsSyntaxHighlighter()
 }
 
-class PropertiesEscaper(host: NativeDefinitionsFirstHalfImpl): LiteralTextEscaper<NativeDefinitionsFirstHalfImpl>(host) {
+class PropertiesEscaper(host: NativeDefinitionsFirstHalfImpl) : LiteralTextEscaper<NativeDefinitionsFirstHalfImpl>(host) {
     override fun isOneLine(): Boolean = false
 
     override fun getOffsetInHost(offsetInDecoded: Int, rangeInsideHost: TextRange): Int = offsetInDecoded
@@ -109,20 +150,15 @@ class PropertiesEscaper(host: NativeDefinitionsFirstHalfImpl): LiteralTextEscape
         outChars.append(myHost.text)
         return true
     }
-
 }
 
-class PropertiesLanguageInjector: MultiHostInjector {
-    val propertiesLanguage = Language.findLanguageByID("Properties");
+class PropertiesLanguageInjector : LanguageInjector {
+    val propertiesLanguage = Language.findLanguageByID("Properties")
 
-    override fun getLanguagesToInject(registrar: MultiHostRegistrar, context: PsiElement) {
-        val ktHost = context as? NativeDefinitionsFirstHalfImpl ?: return
-        if (!context.isValidHost || propertiesLanguage == null) return
+    override fun getLanguagesToInject(host: PsiLanguageInjectionHost, registrat: InjectedLanguagePlaces) {
+        val ktHost = host as? NativeDefinitionsFirstHalfImpl ?: return
+        if (!host.isValidHost || propertiesLanguage == null) return
 
-        registrar.startInjecting(propertiesLanguage).addPlace(null,null, context, context.getTextRange()).doneInjecting()
-    }
-
-    override fun elementsToInjectIn(): List<Class<out PsiElement>> {
-        return listOf(NativeDefinitionsFirstHalfImpl::class.java)
+        registrat.addPlace(propertiesLanguage, host.getTextRange(), null, null)
     }
 }

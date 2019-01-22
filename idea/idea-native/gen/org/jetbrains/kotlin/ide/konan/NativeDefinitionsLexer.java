@@ -31,11 +31,11 @@ class NativeDefinitionsLexer implements FlexLexer {
    *                  at the beginning of a line
    * l is of the form l = 2*k, k a non negative integer
    */
-  private static final int ZZ_LEXSTATE[] = { 
+  private static final int ZZ_LEXSTATE[] = {
      0,  0,  1, 1
   };
 
-  /** 
+  /**
    * Translates characters to character classes
    * Chosen bits are [8, 6, 7]
    * Total runtime size is 1040 bytes
@@ -56,7 +56,7 @@ class NativeDefinitionsLexer implements FlexLexer {
   static final char ZZ_CMAP_A[] = zzUnpackCMap(
     "\11\0\1\1\1\3\1\0\1\1\1\2\22\0\1\1\14\0\1\4\110\0\1\1\211\0");
 
-  /** 
+  /**
    * Translates DFA states to action switch labels.
    */
   private static final int [] ZZ_ACTION = zzUnpackAction();
@@ -84,7 +84,7 @@ class NativeDefinitionsLexer implements FlexLexer {
   }
 
 
-  /** 
+  /**
    * Translates a state to a row index in the transition table
    */
   private static final int [] ZZ_ROWMAP = zzUnpackRowMap();
@@ -111,7 +111,7 @@ class NativeDefinitionsLexer implements FlexLexer {
     return j;
   }
 
-  /** 
+  /**
    * The transition table of the DFA
    */
   private static final int [] ZZ_TRANS = zzUnpackTrans();
@@ -230,7 +230,7 @@ class NativeDefinitionsLexer implements FlexLexer {
   }
 
 
-  /** 
+  /**
    * Unpacks the compressed character translation table.
    *
    * @param packed   the packed character translation table
@@ -381,7 +381,7 @@ class NativeDefinitionsLexer implements FlexLexer {
   private void zzDoEOF() {
     if (!zzEOFDone) {
       zzEOFDone = true;
-    
+
     }
   }
 
@@ -477,19 +477,19 @@ class NativeDefinitionsLexer implements FlexLexer {
       }
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
-          case 1: 
-            { yybegin(AFTER_TOKEN); return NativeDefinitionsTypes.A_LINE;
-            } 
+          case 1:
+            { yybegin(AFTER_TOKEN); return NativeDefinitionsTypes.HOST_TOKEN;
+            }
             // fall through
           case 4: break;
-          case 2: 
+          case 2:
             { yybegin(YYINITIAL); return TokenType.WHITE_SPACE;
-            } 
+            }
             // fall through
           case 5: break;
-          case 3: 
-            { yybegin(AFTER_TOKEN); return NativeDefinitionsTypes.DELIM;
-            } 
+          case 3:
+            { yybegin(AFTER_TOKEN); return NativeDefinitionsTypes.DELIM_TOKEN;
+            }
             // fall through
           case 6: break;
           default:

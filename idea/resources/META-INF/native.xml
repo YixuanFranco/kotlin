@@ -18,7 +18,7 @@
         <library.type implementation="org.jetbrains.kotlin.ide.konan.NativeLibraryType"/>
         <lang.parserDefinition language="KND" implementationClass="org.jetbrains.kotlin.ide.konan.NativeDefinitionsParserDefinition"/>
         <lang.syntaxHighlighterFactory language="KND" implementationClass="org.jetbrains.kotlin.ide.konan.NativeDefinitionsSyntaxHighlighterFactory"/>
-        <multiHostInjector implementation="org.jetbrains.kotlin.ide.konan.PropertiesLanguageInjector"/>
+        <languageInjector implementation="org.jetbrains.kotlin.ide.konan.PropertiesLanguageInjector"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">

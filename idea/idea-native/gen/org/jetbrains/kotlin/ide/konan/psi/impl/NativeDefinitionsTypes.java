@@ -12,8 +12,8 @@ public interface NativeDefinitionsTypes {
   IElementType FIRST_HALF = new NativeDefinitionsElementType("FIRST_HALF");
   IElementType SECOND_HALF = new NativeDefinitionsElementType("SECOND_HALF");
 
-  IElementType A_LINE = new NativeDefinitionsTokenType("A_LINE");
-  IElementType DELIM = new NativeDefinitionsTokenType("DELIM");
+  IElementType HOST_TOKEN = new NativeDefinitionsTokenType("HOST_TOKEN");
+  IElementType DELIM_TOKEN = new NativeDefinitionsTokenType("DELIM_TOKEN");
 
   class Factory {
     public static PsiElement createElement(ASTNode node) {

@@ -11,12 +11,14 @@ import com.intellij.psi.tree.TokenSet;
 import com.intellij.lang.PsiParser;
 import com.intellij.lang.LightPsiParser;
 
+
 @SuppressWarnings({"SimplifiableIfStatement", "UnusedAssignment"})
 public class NativeDefinitionsParser implements PsiParser, LightPsiParser {
 
   public ASTNode parse(IElementType t, PsiBuilder b) {
     parseLight(t, b);
-    return b.getTreeBuilt();
+    ASTNode tree = b.getTreeBuilt();
+    return tree;
   }
 
   public void parseLight(IElementType t, PsiBuilder b) {
@@ -46,7 +48,7 @@ public class NativeDefinitionsParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, FIRST_HALF, "<first half>");
     while (true) {
       int c = current_position_(b);
-      if (!consumeToken(b, A_LINE)) break;
+      if (!consumeToken(b, HOST_TOKEN)) break;
       if (!empty_element_parsed_guard_(b, "FIRST_HALF", c)) break;
     }
     exit_section_(b, l, m, true, false, null);
@@ -77,7 +79,7 @@ public class NativeDefinitionsParser implements PsiParser, LightPsiParser {
     if (!recursion_guard_(b, l, "ROOT_1_0")) return false;
     boolean r;
     Marker m = enter_section_(b);
-    r = consumeToken(b, DELIM);
+    r = consumeToken(b, DELIM_TOKEN);
     r = r && SECOND_HALF(b, l + 1);
     exit_section_(b, m, null, r);
     return r;
@@ -90,7 +92,7 @@ public class NativeDefinitionsParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_, SECOND_HALF, "<second half>");
     while (true) {
       int c = current_position_(b);
-      if (!consumeToken(b, A_LINE)) break;
+      if (!consumeToken(b, HOST_TOKEN)) break;
       if (!empty_element_parsed_guard_(b, "SECOND_HALF", c)) break;
     }
     exit_section_(b, l, m, true, false, null);
